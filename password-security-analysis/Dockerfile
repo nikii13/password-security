@@ -13,5 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY tests/ tests/
 
-# Default: run the whole data pipeline
-CMD ["sh", "-c", "python -m src.data.sample_dataset && python -m src.data.clean_dataset && python -m src.data.validate_dataset && python -m src.features.password_features"]
+# Default: run the pipeline on the FROZEN samples in data/samples/
+# (section 2 of the README). Sampling (section 1) is not re-run on purpose.
+CMD ["sh", "-c", "python -m src.data.clean_dataset && python -m src.data.validate_dataset && python -m src.features.password_features && python -m src.models.rule_based"]
