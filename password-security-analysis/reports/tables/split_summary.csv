@@ -1,6 +1,6 @@
 split,source,label_name,rows
 challenge,challenge,predictable,1161
 test,random,not_predictable,20000
-test,rockyou,predictable,20000
+test,rockyou,predictable,19998
 train,random,not_predictable,80000
-train,rockyou,predictable,79994
+train,rockyou,predictable,79996
