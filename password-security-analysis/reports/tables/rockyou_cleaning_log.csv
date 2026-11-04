@@ -1,0 +1,6 @@
+step,rows
+raw_lines,14344391
+valid_utf8,14344173
+valid_chars_and_length,14340394
+after_exact_dedup,14340394
+final_sample,99997

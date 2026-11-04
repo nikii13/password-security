@@ -1,0 +1,15 @@
+# Usage (from the repository root):
+#   docker compose run --rm pipeline   -> builds samples, cleans, validates, extracts features
+#   docker compose run --rm tests      -> runs the unit tests
+# Later (Part 7) an `app` service for the web interface will be added here.
+
+services:
+  pipeline:
+    build: .
+    volumes:
+      - ./data:/app/data          # rockyou.txt in, CSVs out, on YOUR disk
+      - ./reports:/app/reports    # tables for the report
+
+  tests:
+    build: .
+    command: python -m pytest -q

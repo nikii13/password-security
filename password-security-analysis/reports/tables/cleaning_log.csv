@@ -1,0 +1,8 @@
+step,rows
+loaded_challenge,1161
+loaded_rockyou,99997
+loaded_random,100000
+merged,201158
+after_validity_filter,201158
+after_cross_source_dedup,201155
+info_rockyou_rows_sharing_a_challenge_family,542
