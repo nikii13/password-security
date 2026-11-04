@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local data: never commit raw or processed password datasets
+data/raw/*
+data/samples/*
+data/processed/*
+!data/raw/.gitkeep
+!data/samples/.gitkeep
+!data/processed/.gitkeep
+
+# Local outputs
+reports/*
+!reports/.gitkeep
+*.joblib
+*.pkl
+.env
