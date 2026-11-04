@@ -16,6 +16,7 @@ Run from the repository root:
 """
 import argparse
 import csv
+import math
 import random
 import secrets
 import string
@@ -103,17 +104,39 @@ def sample_rockyou(rng):
 # `secrets` uses the OS's cryptographically secure generator (`random` is not
 # suitable for passwords). The seed only fixes the recipe (lengths, mix);
 # the passwords themselves differ on every run, as random passwords should.
+#
+# LABEL CRITERION for "not predictable" (label 0):
+#   1. produced by a cryptographically secure generator, AND
+#   2. brute-force search space  alphabet_size ** length  >=  10**14,
+#      the offline-attack threshold of Florencio, Herley & van Oorschot,
+#      "An Administrator's Guide to Internet Password Research", USENIX LISA 2014.
+# The minimum length of each composition is computed from this threshold.
+#
+# Composition is deliberately varied: if every random password had a symbol,
+# the model would learn "symbol = strong", which is exactly the LUDS rule
+# (System A) we want to test against.
 RANDOM_N = 100_000                 # same size as RockYou -> balanced classes
-RANDOM_MIN_LEN, RANDOM_MAX_LEN = 8, 16
+RANDOM_MAX_LEN = 16
+SAFE_LOG10_GUESSES = 14            # 10^14 guesses (offline threshold)
 LOWER, UPPER = string.ascii_lowercase, string.ascii_uppercase
 DIGITS, SYMBOLS = string.digits, "!@#$%^&*()-_=+[]{};:,.?/"
-# Varied composition so that "strong" does not always mean "has a symbol"
 RANDOM_COMPOSITIONS = {            # name -> (pools that must appear, share)
     "all_four_classes": ([LOWER, UPPER, DIGITS, SYMBOLS], 0.40),
     "lower_upper_digit": ([LOWER, UPPER, DIGITS], 0.20),
     "lower_digit": ([LOWER, DIGITS], 0.20),
     "lower_only": ([LOWER], 0.20),
 }
+
+
+def min_safe_length(pools):
+    """Shortest length whose search space reaches 10^SAFE_LOG10_GUESSES.
+    lower_only (26 chars) -> 10, lower_digit (36) -> 9, the rest -> 8."""
+    alphabet_size = len(set("".join(pools)))
+    return max(8, math.ceil(SAFE_LOG10_GUESSES / math.log10(alphabet_size)))
+
+
+def log10_search_space(pools, length):
+    return length * math.log10(len(set("".join(pools))))
 
 
 def make_random_password(pools, length):
@@ -126,17 +149,25 @@ def make_random_password(pools, length):
 
 
 def sample_random(rng):
-    rows, seen = [], set()
+    rows, seen, summary = [], set(), []
     for name, (pools, share) in RANDOM_COMPOSITIONS.items():
+        min_len = min_safe_length(pools)
         made = 0
         while made < round(RANDOM_N * share):
-            pw = make_random_password(pools, rng.randint(RANDOM_MIN_LEN, RANDOM_MAX_LEN))
+            length = rng.randint(min_len, RANDOM_MAX_LEN)
+            assert log10_search_space(pools, length) >= SAFE_LOG10_GUESSES
+            pw = make_random_password(pools, length)
             if pw in seen:
                 continue
             seen.add(pw)
             rows.append((pw, name, "", int(is_rule_compliant(pw)), family_id(pw)))
             made += 1
+        summary.append((name, len(set("".join(pools))), min_len, RANDOM_MAX_LEN,
+                        round(log10_search_space(pools, min_len), 1), made))
     write_csv(RANDOM_SAMPLE, COLUMNS, rows)
+    write_csv(TABLES_DIR / "random_compositions.csv",
+              ["composition", "alphabet_size", "min_length", "max_length",
+               "min_log10_guesses", "generated"], summary)
     return len(rows)
 
 

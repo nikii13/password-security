@@ -8,6 +8,7 @@ trains a model on a broken dataset.
 Input: data/processed/passwords_clean.csv
 Run:   python -m src.data.validate_dataset
 """
+import math
 import sys
 
 import pandas as pd
@@ -16,6 +17,16 @@ from src.utils.common import CLEAN_DATASET, is_rule_compliant, is_valid_password
 from src.utils.wordlists import CHALLENGE_WORDS_UNSEEN, COMMON_WORDS
 
 REQUIRED = ["password", "source", "label", "family_id", "split", "fold"]
+CLASS_SIZES = {"lower": 26, "upper": 26, "digit": 10, "symbol": 24}
+
+
+def log10_search_space(pw):
+    """Brute-force search space from the character classes present."""
+    size = (CLASS_SIZES["lower"] * any(c.islower() for c in pw)
+            + CLASS_SIZES["upper"] * any(c.isupper() for c in pw)
+            + CLASS_SIZES["digit"] * any(c.isdigit() for c in pw)
+            + CLASS_SIZES["symbol"] * any(not c.isalnum() for c in pw))
+    return len(pw) * math.log10(size)
 
 
 def run_checks(df):
@@ -48,6 +59,9 @@ def run_checks(df):
          0.15 <= test_share <= 0.25, f"{test_share:.1%}"),
         ("classes roughly balanced (40-60% predictable)",
          0.40 <= balance <= 0.60, f"{balance:.1%} predictable"),
+        ("every label-0 password reaches 10^14 guesses (Florencio et al.)",
+         df[df.label == 0].password.map(log10_search_space).min() >= 14,
+         f"min = 10^{df[df.label == 0].password.map(log10_search_space).min():.1f}"),
         ("every train row has a CV fold 0-4",
          train.fold.between(0, 4).all(), ""),
         ("unseen challenge words not in feature dictionary",
