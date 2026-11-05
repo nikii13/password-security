@@ -58,10 +58,18 @@ Notes:
 | 3 | `src/features/password_features.py` | `python -m src.features.password_features` | `passwords_clean.csv` | `data/processed/password_features.csv` |
 | 4 | `src/models/rule_based.py` (System A) | `python -m src.models.rule_based` | `passwords_clean.csv` | `data/processed/rule_based_predictions.csv`, `reports/tables/rule_based_metrics.csv`, `rule_based_by_stratum.csv` |
 | 5 | `src/models/train_ml.py` (System B) | `python -m src.models.train_ml` (1–2 min) | `password_features.csv`, `rule_based_predictions.csv` | `models/*.joblib`, `data/processed/ml_predictions.csv`, `reports/tables/ml_cv_results.csv`, `ml_metrics.csv`, `ml_by_stratum.csv`, `ml_feature_importance.csv`, `system_a_vs_b.csv` |
-| 5b | robustness check (optional) | `python -m src.models.train_ml --ablation` (+1 min) | same | also `reports/tables/ml_ablation.csv` |
-| 6 | tests | `python -m pytest -q` | code | must end with "21 passed" |
+| 5b | robustness check | `python -m src.models.train_ml --ablation` (+1 min) | same | also `reports/tables/ml_ablation.csv` (needed for figure 5) |
+| 6 | `src/evaluation/make_figures.py` (Part 5) | `python -m src.evaluation.make_figures` | `reports/tables/*`, `ml_predictions.csv`, `rule_based_predictions.csv` | `reports/figures/fig1…fig6.png`, `reports/tables/comparison_summary.csv` |
+| 7 | `src/similarity/evaluate_similarity.py` (Part 6) | `python -m src.similarity.evaluate_similarity` | `data/samples/rockyou_sample.csv` | `reports/tables/similarity_examples.csv`, `similarity_evaluation.csv`, `reports/figures/fig7_similarity_distribution.png` |
+| 8 | tests | `python -m pytest -q` | code | must end with "28 passed" |
 
-Step 5 must run **after** step 4: it compares both systems on the same rows.
+Compare any passwords directly (Part 6):
+
+```
+python -m src.similarity.password_similarity Maria2026! Maria2026# Maria2027!
+```
+
+Step 5 must run **after** step 4 (it compares both systems on the same rows), and step 6 after step 5.
 
 After cloning the repo, `data/processed/` and `models/` are empty: run
 steps 1–5 once before working.
@@ -75,10 +83,12 @@ steps 1–5 once before working.
 | `src/utils/wordlists.py` | 2 (validate), then 3 and 5 |
 | `password_features.py` | 3, then 5 |
 | `rule_based.py` | 4, then 5 (the comparison table uses System A) |
-| `train_ml.py` | 5 |
-| only tests | 6 |
+| `train_ml.py` | 5, then 6 |
+| `make_figures.py` | 6 |
+| `src/similarity/*` | 7 |
+| only tests | 8 |
 
-Always run the tests (step 6) before committing.
+Always run the tests (step 8) before committing.
 
 ---
 
@@ -91,9 +101,9 @@ Always run the tests (step 6) before committing.
 | 3. Feature extraction | done | `src/features/password_features.py` |
 | 4a. System A (rule-based) | done | `src/models/rule_based.py` |
 | 4b. System B (ML) | done | `src/models/train_ml.py` |
-| 5. Comparison & evaluation | first tables done (`system_a_vs_b.csv`); figures **next** | |
-| 6. Password similarity | pending | |
-| 7. Web interface | pending | |
+| 5. Comparison & evaluation | done | `src/evaluation/make_figures.py`, `reports/figures/` |
+| 6. Password similarity | done | `src/similarity/password_similarity.py`, `evaluate_similarity.py` |
+| 7. Web interface | **next** | |
 
 Update this table, the step table in section 2 and the test count every
 time a part is added.
@@ -110,7 +120,7 @@ time a part is added.
 | `.venv/`, `__pycache__/` | no | local only |
 | `data/samples/rockyou_sample.csv` | only if the repo is **private** | real leaked passwords |
 | `data/samples/random_sample.csv`, `challenge_sample.csv` | yes | frozen data, not sensitive |
-| `src/`, `tests/`, `reports/tables/`, config files | yes | code and report tables |
+| `src/`, `tests/`, `reports/tables/`, `reports/figures/`, config files | yes | code, report tables and figures |
 
 `.gitignore` handles this automatically. Check `git status` before every commit.
 
@@ -121,7 +131,7 @@ time a part is added.
 Same pipeline without installing Python locally (requires Docker Desktop):
 
 ```
-docker compose run --rm pipeline   # steps 1-5 of section 2, on the frozen samples
+docker compose run --rm pipeline   # steps 1-6 of section 2, on the frozen samples
 docker compose run --rm tests
 ```
 
