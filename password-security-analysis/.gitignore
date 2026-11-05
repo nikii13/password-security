@@ -13,6 +13,7 @@ data/processed/*
 # data/samples/rockyou_sample.csv
 
 # --- Models -----------------------------------------------------------------
+models/*.joblib
 models/*.pkl
 
 # --- Python -----------------------------------------------------------------
