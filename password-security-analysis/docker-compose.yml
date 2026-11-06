@@ -1,16 +1,31 @@
 # Usage (from the repository root):
-#   docker compose run --rm pipeline   -> builds samples, cleans, validates, extracts features
+#   docker compose up app              -> web interface on http://localhost:8501
+#                                         (runs the pipeline first if the models are missing)
+#   docker compose run --rm pipeline   -> re-runs the whole pipeline (clean ... train_ml)
 #   docker compose run --rm tests      -> runs the unit tests
-# Later (Part 7) an `app` service for the web interface will be added here.
+#
+# data/, reports/ and models/ are folders on YOUR disk, shared with the containers.
+
+x-project: &project
+  build: .
+  volumes:
+    - ./data:/app/data          # samples in, processed CSVs out
+    - ./reports:/app/reports    # tables for the report
+    - ./models:/app/models      # trained models (System B)
 
 services:
   pipeline:
-    build: .
-    volumes:
-      - ./data:/app/data          # rockyou.txt in, CSVs out, on YOUR disk
-      - ./reports:/app/reports    # tables for the report
-      - ./models:/app/models      # trained models (System B)
+    <<: *project
+
+  app:
+    <<: *project
+    ports:
+      - "8501:8501"
+    command: >
+      sh -c "if [ ! -f models/random_forest.joblib ] || [ ! -f data/processed/password_features.csv ];
+             then echo 'First run: building data and models (about 3 minutes)...' && sh run_pipeline.sh; fi
+             && streamlit run app/streamlit_app.py --server.address=0.0.0.0 --server.port=8501"
 
   tests:
-    build: .
+    <<: *project
     command: python -m pytest -q

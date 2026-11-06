@@ -1,0 +1,5 @@
+experiment,features_removed,test_f1,challenge_recall_seen,challenge_recall_unseen,rule_compliant_rockyou_recall
+all_features,,0.9546094570031489,1.0,1.0,0.891683266932271
+no_class_transitions,class_transitions,0.9482780792675085,1.0,1.0,0.8677788844621513
+no_structure_features,"class_transitions, letters_then_digits, word_digits_symbol, trailing_digits, starts_with_upper, ends_with_symbol",0.9231478398934672,1.0,1.0,0.8381474103585658
+no_dictionary_features,"contains_common_word, common_word_ratio, leet_used",0.9483239152113324,1.0,1.0,0.8904382470119522

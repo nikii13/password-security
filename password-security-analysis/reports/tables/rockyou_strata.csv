@@ -1,5 +1,0 @@
-stratum,rank_range,pool_size,sampled
-very_common,1-10000,9997,9997
-common,10001-1000000,989567,30000
-rare,1000001-14344383,13340830,40000
-rule_compliant_extra,any,46230,20000

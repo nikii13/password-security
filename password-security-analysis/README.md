@@ -3,6 +3,10 @@
 Can a lightweight machine-learning model identify weak and predictable
 passwords that traditional rule-based checkers classify as secure?
 
+**Quick start (web interface):** `docker compose up app`, then open
+<http://localhost:8501>. The first run builds the data and models (about 3 minutes).
+Without Docker: steps 0 and 2 below, then `streamlit run app/streamlit_app.py`.
+
 All commands are run **from the repository root**, inside the virtual
 environment (`source .venv/bin/activate`).
 
@@ -59,7 +63,10 @@ Notes:
 | 4 | `src/models/rule_based.py` (System A) | `python -m src.models.rule_based` | `passwords_clean.csv` | `data/processed/rule_based_predictions.csv`, `reports/tables/rule_based_metrics.csv`, `rule_based_by_stratum.csv` |
 | 5 | `src/models/train_ml.py` (System B) | `python -m src.models.train_ml` (1–2 min) | `password_features.csv`, `rule_based_predictions.csv` | `models/*.joblib`, `data/processed/ml_predictions.csv`, `reports/tables/ml_cv_results.csv`, `ml_metrics.csv`, `ml_by_stratum.csv`, `ml_feature_importance.csv`, `system_a_vs_b.csv` |
 | 5b | robustness check (optional) | `python -m src.models.train_ml --ablation` (+1 min) | same | also `reports/tables/ml_ablation.csv` |
-| 6 | tests | `python -m pytest -q` | code | must end with "21 passed" |
+| 6 | tests | `python -m pytest -q` | code | must end with "29 passed" (the 8 interface tests are skipped until steps 1–5 have run) |
+| 7 | web interface | `streamlit run app/streamlit_app.py` | `reports/tables/`, `data/processed/`, `models/` | nothing: opens <http://localhost:8501> |
+
+Steps 1–5b in one command: `sh run_pipeline.sh`.
 
 Step 5 must run **after** step 4: it compares both systems on the same rows.
 
@@ -76,6 +83,7 @@ steps 1–5 once before working.
 | `password_features.py` | 3, then 5 |
 | `rule_based.py` | 4, then 5 (the comparison table uses System A) |
 | `train_ml.py` | 5 |
+| only the interface (`app/`) | nothing: Streamlit reloads the page; restart it if you change `app/common.py` |
 | only tests | 6 |
 
 Always run the tests (step 6) before committing.
@@ -91,9 +99,9 @@ Always run the tests (step 6) before committing.
 | 3. Feature extraction | done | `src/features/password_features.py` |
 | 4a. System A (rule-based) | done | `src/models/rule_based.py` |
 | 4b. System B (ML) | done | `src/models/train_ml.py` |
-| 5. Comparison & evaluation | first tables done (`system_a_vs_b.csv`); figures **next** | |
+| 5. Comparison & evaluation | done (`system_a_vs_b.csv`, figures in the interface) | `src/models/train_ml.py`, `app/views/compare.py` |
 | 6. Password similarity | pending | |
-| 7. Web interface | pending | |
+| 7. Web interface | done | `app/` |
 
 Update this table, the step table in section 2 and the test count every
 time a part is added.
@@ -118,16 +126,48 @@ time a part is added.
 
 ## 5. Docker (optional)
 
-Same pipeline without installing Python locally (requires Docker Desktop):
+Everything without installing Python locally (requires Docker Desktop):
 
 ```
-docker compose run --rm pipeline   # steps 1-5 of section 2, on the frozen samples
-docker compose run --rm tests
+docker compose up app              # web interface on http://localhost:8501
+docker compose run --rm pipeline   # re-run steps 1-5b of section 2 on the frozen samples
+docker compose run --rm tests      # unit tests
 ```
+
+- `app` runs the pipeline automatically the first time (when `models/` is empty), then starts the interface. Stop it with Ctrl+C.
+- After changing the code, rebuild the image: `docker compose build`.
+- If you change the data or a pipeline step, run `docker compose run --rm pipeline` and restart `app`.
+- `data/`, `reports/` and `models/` live on your disk and are shared with the containers.
 
 ---
 
-## 6. Data and labels
+## 6. Web interface (`app/`)
+
+Built with Streamlit + Plotly. It only reads what the pipeline produced.
+
+| Page | What it shows |
+| --- | --- |
+| Overview | Research question, key numbers, the main A vs B chart, links to every page |
+| Data | The 3 samples, train/test/challenge split, RockYou strata, random compositions vs the 10^14 threshold, challenge templates, example rows |
+| Features | Meaning of the 30 features, distribution of any feature in weak vs strong passwords, feature values for any password |
+| System A · rules | Rules, % correct per group, Weak/Medium/Strong per group, confusion matrix and metric formulas |
+| System B · ML | Cross-validation (LR vs RF), test and challenge results, feature importance, robustness check, predicted probabilities |
+| A vs B | Side-by-side metrics, group-by-group comparison, both confusion matrices, limitations |
+| Try a password | What System A and System B say about any password, the patterns found and the features that push the decision |
+
+```
+app/
+├── streamlit_app.py   # navigation (entry point)
+├── common.py          # paths, cached loaders, colours, shared charts
+└── views/             # one file per page
+.streamlit/config.toml # dark blue theme
+```
+
+Passwords typed in *Try a password* are processed in memory only; nothing is stored.
+
+---
+
+## 7. Data and labels
 
 **Samples** (`data/samples/`):
 - **A.** `rockyou_sample.csv`: 99,997 human passwords from the 2009 RockYou leak, stratified by frequency rank (`very_common`, `common`, `rare`) plus 20,000 rule-compliant ones (`rule_compliant_extra`).

@@ -1,5 +1,0 @@
-composition,alphabet_size,min_length,max_length,min_log10_guesses,generated
-all_four_classes,86,8,16,15.5,40000
-lower_upper_digit,62,8,16,14.3,20000
-lower_digit,36,9,16,14.0,20000
-lower_only,26,10,16,14.1,20000
